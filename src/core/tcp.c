@@ -1019,10 +1019,15 @@ tcp_new_port(void)
   struct tcp_pcb *pcb;
 
 again:
+#if TCP_RANDOM_PORT && defined(LWIP_RAND)
+  tcp_port = (u16_t)(LWIP_RAND() % (TCP_LOCAL_PORT_RANGE_END - TCP_LOCAL_PORT_RANGE_START))
+             + TCP_LOCAL_PORT_RANGE_START;
+#else
   tcp_port++;
   if (tcp_port == TCP_LOCAL_PORT_RANGE_END) {
     tcp_port = TCP_LOCAL_PORT_RANGE_START;
   }
+#endif
   /* Check all PCB lists. */
   for (i = 0; i < NUM_TCP_PCB_LISTS; i++) {
     for (pcb = *tcp_pcb_lists[i]; pcb != NULL; pcb = pcb->next) {
