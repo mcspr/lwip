@@ -1015,9 +1015,12 @@ tcp_new_port(void)
   u16_t n = 0;
   struct tcp_pcb *pcb;
 
+#ifndef LWIP_HOOK_TCP_NEW_PORT
+#define LWIP_HOOK_TCP_NEW_PORT(PORT) (void)(PORT)
+#endif
+  LWIP_HOOK_TCP_NEW_PORT(tcp_port);
 again:
-  tcp_port++;
-  if (tcp_port == TCP_LOCAL_PORT_RANGE_END) {
+  if (tcp_port++ == TCP_LOCAL_PORT_RANGE_END) {
     tcp_port = TCP_LOCAL_PORT_RANGE_START;
   }
   /* Check all PCB lists. */
