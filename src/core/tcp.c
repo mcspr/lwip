@@ -1019,10 +1019,14 @@ tcp_new_port(void)
   struct tcp_pcb *pcb;
 
 again:
-  tcp_port++;
-  if (tcp_port == TCP_LOCAL_PORT_RANGE_END) {
-    tcp_port = TCP_LOCAL_PORT_RANGE_START;
+#if ! defined LWIP_HOOK_TCP_NEW_PORT
+#define LWIP_HOOK_TCP_NEW_PORT(PORT) \
+  (PORT)++; \
+  if ((PORT) == TCP_LOCAL_PORT_RANGE_END) { \
+    (PORT) = TCP_LOCAL_PORT_RANGE_START; \
   }
+#endif
+  LWIP_HOOK_TCP_NEW_PORT(tcp_port);
   /* Check all PCB lists. */
   for (i = 0; i < NUM_TCP_PCB_LISTS; i++) {
     for (pcb = *tcp_pcb_lists[i]; pcb != NULL; pcb = pcb->next) {
