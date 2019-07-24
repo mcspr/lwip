@@ -460,7 +460,10 @@ igmp_joingroup(const ip4_addr_t *ifaddr, const ip4_addr_t *groupaddr)
   /* loop through netif's */
   NETIF_FOREACH(netif) {
     /* Should we join this interface ? */
-    if ((netif->flags & NETIF_FLAG_IGMP) && ((ip4_addr_isany(ifaddr) || ip4_addr_cmp(netif_ip4_addr(netif), ifaddr)))) {
+    if ((netif->flags & NETIF_FLAG_IGMP) &&
+        (netif->flags & NETIF_FLAG_UP) &&
+        (netif->flags & NETIF_FLAG_LINK_UP) &&
+        ((ip4_addr_isany(ifaddr) || ip4_addr_cmp(netif_ip4_addr(netif), ifaddr)))) {
       err = igmp_joingroup_netif(netif, groupaddr);
       if (err != ERR_OK) {
         /* Return an error even if some network interfaces are joined */
