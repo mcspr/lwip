@@ -825,20 +825,28 @@ sntp_setserver(u8_t idx, const ip_addr_t *server)
  * @param server IP address of the NTP server to set
  */
 void
-dhcp_set_ntp_servers(u8_t num, const ip4_addr_t *server)
+dhcp_set_ntp_servers(u8_t num, const ip4_addr_t *servers)
 {
-  LWIP_DEBUGF(SNTP_DEBUG_TRACE, ("sntp: %s %u.%u.%u.%u as NTP server #%u via DHCP\n",
+  LWIP_DEBUGF(SNTP_DEBUG_TRACE, ("sntp: %s %u NTP server(s) via DHCP\n",
                                  (sntp_set_servers_from_dhcp ? "Got" : "Rejected"),
-                                 ip4_addr1(server), ip4_addr2(server), ip4_addr3(server), ip4_addr4(server), num));
+                                 num));
   if (sntp_set_servers_from_dhcp && num) {
-    u8_t i;
-    for (i = 0; (i < num) && (i < SNTP_MAX_SERVERS); i++) {
-      ip_addr_t addr;
-      ip_addr_copy_from_ip4(addr, server[i]);
-      sntp_setserver(i, &addr);
-    }
-    for (i = num; i < SNTP_MAX_SERVERS; i++) {
-      sntp_setserver(i, NULL);
+    u8_t newidx = 0;
+    for (u8_t i = 0; i < SNTP_MAX_SERVERS; i++) {
+      const ip_addr_t* slotIp = sntp_getserver(i);
+      /* If we have an empty or IPv4 slot replace it with a new value from DHCP */
+      if (ip_addr_isany(slotIp) || IP_IS_V4(slotIp)) {
+        if (newidx < num) {
+          ip_addr_t addr;
+          ip_addr_copy_from_ip4(addr, servers[newidx]);
+          LWIP_DEBUGF(SNTP_DEBUG_TRACE, ("sntp: Adding server %s to slot %u\n",
+                                        ipaddr_ntoa(&addr), i ));
+          sntp_setserver(i, &addr);
+          newidx++;
+        } else {
+          sntp_setserver(i, NULL);
+        }
+      }
     }
   }
 }
@@ -858,14 +866,20 @@ dhcp6_set_ntp_servers(u8_t num_ntp_servers, ip_addr_t* ntp_server_addrs)
                                  (sntp_set_servers_from_dhcp ? "Got" : "Rejected"),
                                  num_ntp_servers));
   if (sntp_set_servers_from_dhcp && num_ntp_servers) {
-    u8_t i;
-    for (i = 0; (i < num_ntp_servers) && (i < SNTP_MAX_SERVERS); i++) {
-      LWIP_DEBUGF(SNTP_DEBUG_TRACE, ("sntp: NTP server %u: %s\n",
-                                     i, ipaddr_ntoa(&ntp_server_addrs[i])));
-      sntp_setserver(i, &ntp_server_addrs[i]);
-    }
-    for (i = num_ntp_servers; i < SNTP_MAX_SERVERS; i++) {
-      sntp_setserver(i, NULL);
+    u8_t newidx = 0;
+    for (u8_t i = 0; i < SNTP_MAX_SERVERS; i++) {
+      const ip_addr_t* slotIp = sntp_getserver(i);
+      /* If we have an empty or IPv6 slot replace it with a new value from DHCPv6 */
+      if (ip_addr_isany(slotIp) || IP_IS_V6(slotIp)) {
+        if (newidx < num_ntp_servers) {
+          LWIP_DEBUGF(SNTP_DEBUG_TRACE, ("sntp: Adding server %s to slot %u\n",
+                                         ipaddr_ntoa(&ntp_server_addrs[newidx]), i));
+          sntp_setserver(i, &ntp_server_addrs[newidx]);
+          newidx++;
+        } else {
+          sntp_setserver(i, NULL);
+        }
+      }
     }
   }
 }
