@@ -538,16 +538,19 @@ dhcp6_handle_config_reply(struct netif *netif, struct pbuf *p_msg_in)
 
     ip_addr_set_zero_ip6(&dns_addr);
     dns_addr6 = ip_2_ip6(&dns_addr);
-    for (n = 0, idx = op_start; (idx < op_start + op_len) && (n < LWIP_DHCP6_PROVIDE_DNS_SERVERS);
-         n++, idx += sizeof(struct ip6_addr_packed)) {
-      u16_t copied = pbuf_copy_partial(p_msg_in, dns_addr6, sizeof(struct ip6_addr_packed), idx);
-      if (copied != sizeof(struct ip6_addr_packed)) {
-        /* pbuf length mismatch */
-        return;
+    idx = op_start;
+    for (n = 0; (idx < op_start + op_len) && (n < LWIP_DHCP6_PROVIDE_DNS_SERVERS); n++ ) {
+      const ip_addr_t* dns_slot_ip = dns_getserver(n);
+      if (ip_addr_isany(dns_slot_ip) || IP_IS_V6(dns_slot_ip)) {
+        u16_t copied = pbuf_copy_partial(p_msg_in, dns_addr6, sizeof(struct ip6_addr_packed), idx);
+        if (copied != sizeof(struct ip6_addr_packed)) {
+          /* pbuf length mismatch */
+          return;
+        }
+        ip6_addr_assign_zone(dns_addr6, IP6_UNKNOWN, netif);
+        dns_setserver(n, &dns_addr);
+        idx += sizeof(struct ip6_addr_packed);
       }
-      ip6_addr_assign_zone(dns_addr6, IP6_UNKNOWN, netif);
-      /* @todo: do we need a different offset than DHCP(v4)? */
-      dns_setserver(n, &dns_addr);
     }
   }
   /* @ todo: parse and set Domain Search List */
