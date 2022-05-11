@@ -443,7 +443,9 @@ u32_t sys_jiffies(void);
  * Not implementing this function means you cannot use some modules (e.g. TCP
  * timestamps, internal timeouts for NO_SYS==1).
  */
+#ifndef sys_now
 u32_t sys_now(void);
+#endif
 
 /* Critical Region Protection */
 /* These functions must be implemented in the sys_arch.c file.
