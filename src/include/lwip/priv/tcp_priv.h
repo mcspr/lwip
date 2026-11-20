@@ -520,4 +520,8 @@ err_t tcp_ext_arg_invoke_callbacks_passive_open(struct tcp_pcb_listen *lpcb, str
 
 #endif /* LWIP_TCP */
 
+/** Internal function (implemented in tcp.c), called in tcp_alloc
+ * esp8266 Core historically exports this */
+void tcp_kill_timewait(void);
+
 #endif /* LWIP_HDR_TCP_PRIV_H */
