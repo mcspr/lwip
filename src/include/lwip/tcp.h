@@ -475,6 +475,10 @@ err_t            tcp_write   (struct tcp_pcb *pcb, const void *dataptr, u16_t le
 
 void             tcp_setprio (struct tcp_pcb *pcb, u8_t prio);
 
+/** Internal function (implemented in tcp.c), called in tcp_alloc
+ * esp8266 Core historically exports this */
+void             tcp_kill_timewait(void);
+
 err_t            tcp_output  (struct tcp_pcb *pcb);
 
 err_t            tcp_tcp_get_tcp_addrinfo(struct tcp_pcb *pcb, int local, ip_addr_t *addr, u16_t *port);
