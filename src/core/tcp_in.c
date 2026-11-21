@@ -65,6 +65,11 @@
 #include LWIP_HOOK_FILENAME
 #endif
 
+/** operate on tcp_tw_pcbs before TCP_REG */
+#ifndef TCP_TW_LIMIT
+#define TCP_TW_LIMIT(x)
+#endif
+
 /** Initial CWND calculation as defined RFC 2581 */
 #define LWIP_TCP_CALC_INITIAL_CWND(mss) ((tcpwnd_size_t)LWIP_MIN((4U * (mss)), LWIP_MAX((2U * (mss)), 4380U)))
 
@@ -763,6 +768,19 @@ tcp_timewait_input(struct tcp_pcb *pcb)
     /* - eighth, check the FIN bit: Remain in the TIME-WAIT state.
          Restart the 2 MSL time-wait timeout.*/
     pcb->tmr = tcp_ticks;
+    /* preserve tcp_process() sort */
+    if (pcb != tcp_tw_pcbs) {
+      struct tcp_pcb *prev;
+      struct tcp_pcb *curr;
+      for (prev = tcp_tw_pcbs, curr = prev->next; curr != NULL; prev = curr, curr = curr->next) {
+        if (curr == pcb) {
+          prev->next = curr->next;
+          curr->next = tcp_tw_pcbs;
+          tcp_tw_pcbs = pcb;
+          break;
+        }
+      }
+    }
   }
 
   if ((tcplen > 0)) {
@@ -997,6 +1015,7 @@ tcp_process(struct tcp_pcb *pcb)
           tcp_pcb_purge(pcb);
           TCP_RMV_ACTIVE(pcb);
           pcb->state = TIME_WAIT;
+          TCP_TW_LIMIT(&tcp_tw_pcbs);
           TCP_REG(&tcp_tw_pcbs, pcb);
         } else {
           tcp_ack_now(pcb);
@@ -1015,6 +1034,7 @@ tcp_process(struct tcp_pcb *pcb)
         tcp_pcb_purge(pcb);
         TCP_RMV_ACTIVE(pcb);
         pcb->state = TIME_WAIT;
+        TCP_TW_LIMIT(&tcp_tw_pcbs);
         TCP_REG(&tcp_tw_pcbs, pcb);
       }
       break;
@@ -1025,6 +1045,7 @@ tcp_process(struct tcp_pcb *pcb)
         tcp_pcb_purge(pcb);
         TCP_RMV_ACTIVE(pcb);
         pcb->state = TIME_WAIT;
+        TCP_TW_LIMIT(&tcp_tw_pcbs);
         TCP_REG(&tcp_tw_pcbs, pcb);
       }
       break;

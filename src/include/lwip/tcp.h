@@ -491,6 +491,10 @@ void tcp_ext_arg_set(struct tcp_pcb *pcb, uint8_t id, void *arg);
 void *tcp_ext_arg_get(const struct tcp_pcb *pcb, uint8_t id);
 #endif
 
+/** for esp82xx compatibility, this func is public
+ *  see tcp_alloc() and tcp_in.c usage */
+void            tcp_kill_timewait (void);
+
 #ifdef __cplusplus
 }
 #endif
