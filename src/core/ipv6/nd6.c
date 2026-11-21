@@ -739,7 +739,9 @@ nd6_input(struct pbuf *p, struct netif *inp)
             }
           }
 #if LWIP_IPV6_AUTOCONFIG
-          if (prefix_opt->flags & ND6_PREFIX_FLAG_AUTONOMOUS) {
+          if ((prefix_opt->flags & ND6_PREFIX_FLAG_AUTONOMOUS) ||
+              ((prefix_opt->flags & ND6_PREFIX_FLAG_ON_LINK) &&
+               (prefix_opt->prefix_length == 64))) {
             /* Perform processing for autoconfiguration. */
             nd6_process_autoconfig_prefix(inp, prefix_opt, &prefix_addr);
           }
