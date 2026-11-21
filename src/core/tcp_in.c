@@ -997,6 +997,8 @@ tcp_process(struct tcp_pcb *pcb)
           tcp_pcb_purge(pcb);
           TCP_RMV_ACTIVE(pcb);
           pcb->state = TIME_WAIT;
+          /* limit before TCP_REG, so tcp_kill_timewait() cannot pick this pcb */
+          TCP_TW_LIMIT(MEMP_NUM_TCP_PCB_TIME_WAIT - 1);
           TCP_REG(&tcp_tw_pcbs, pcb);
         } else {
           tcp_ack_now(pcb);
@@ -1015,6 +1017,8 @@ tcp_process(struct tcp_pcb *pcb)
         tcp_pcb_purge(pcb);
         TCP_RMV_ACTIVE(pcb);
         pcb->state = TIME_WAIT;
+        /* limit before TCP_REG, so tcp_kill_timewait() cannot pick this pcb */
+        TCP_TW_LIMIT(MEMP_NUM_TCP_PCB_TIME_WAIT - 1);
         TCP_REG(&tcp_tw_pcbs, pcb);
       }
       break;
@@ -1025,6 +1029,8 @@ tcp_process(struct tcp_pcb *pcb)
         tcp_pcb_purge(pcb);
         TCP_RMV_ACTIVE(pcb);
         pcb->state = TIME_WAIT;
+        /* limit before TCP_REG, so tcp_kill_timewait() cannot pick this pcb */
+        TCP_TW_LIMIT(MEMP_NUM_TCP_PCB_TIME_WAIT - 1);
         TCP_REG(&tcp_tw_pcbs, pcb);
       }
       break;
