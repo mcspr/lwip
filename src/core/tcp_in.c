@@ -65,6 +65,45 @@
 #include LWIP_HOOK_FILENAME
 #endif
 
+/* see tcp.c tcp_kill_timewait (void), c/p to avoid confusing linkage
+ * limit the total number of pcbs in time wait state by killing the oldest ones */
+static void
+tcp_limit_timewait(struct tcp_pcb **pcbs, u32_t limit) {
+  struct tcp_pcb *pcb, *inactive;
+  u32_t inactivity, plus_one_cnt;
+
+  inactivity = 0;
+  inactive = NULL;
+
+  plus_one_cnt = 1;
+  for (pcb = *pcbs; pcb != NULL; pcb = pcb->next)
+    ++plus_one_cnt;
+
+  /* Go through the list of TIME_WAIT pcbs and get the oldest pcb. */
+  while (--plus_one_cnt > limit) {
+    for (pcb = *pcbs; pcb != NULL; pcb = pcb->next) {
+      if ((u32_t)(tcp_ticks - pcb->tmr) >= inactivity) {
+        inactivity = tcp_ticks - pcb->tmr;
+        inactive = pcb;
+      }
+    }
+
+    if ((*pcbs == NULL) || (inactive == NULL)) {
+      break;
+    }
+
+    tcp_abort(inactive);
+    inactive = NULL;
+  }
+}
+
+/* WARNING! apply limit BEFORE calling TCP_REG so the current pcb would not be tcp_abort()'ed */
+#if defined MEMP_NUM_TCP_PCB_TIME_WAIT
+#define TCP_TW_LIMIT(pcbs) tcp_limit_timewait(pcbs, MEMP_NUM_TCP_PCB_TIME_WAIT - 1)
+#else
+#define TCP_TW_LIMIT(pcbs) LWIP_UNUSED_ARG(pcbs);
+#endif
+
 /** Initial CWND calculation as defined RFC 2581 */
 #define LWIP_TCP_CALC_INITIAL_CWND(mss) ((tcpwnd_size_t)LWIP_MIN((4U * (mss)), LWIP_MAX((2U * (mss)), 4380U)))
 
@@ -1009,6 +1048,7 @@ tcp_process(struct tcp_pcb *pcb)
           tcp_pcb_purge(pcb);
           TCP_RMV_ACTIVE(pcb);
           pcb->state = TIME_WAIT;
+          TCP_TW_LIMIT(&tcp_tw_pcbs);
           TCP_REG(&tcp_tw_pcbs, pcb);
         } else {
           tcp_ack_now(pcb);
@@ -1027,6 +1067,7 @@ tcp_process(struct tcp_pcb *pcb)
         tcp_pcb_purge(pcb);
         TCP_RMV_ACTIVE(pcb);
         pcb->state = TIME_WAIT;
+        TCP_TW_LIMIT(&tcp_tw_pcbs);
         TCP_REG(&tcp_tw_pcbs, pcb);
       }
       break;
@@ -1037,6 +1078,7 @@ tcp_process(struct tcp_pcb *pcb)
         tcp_pcb_purge(pcb);
         TCP_RMV_ACTIVE(pcb);
         pcb->state = TIME_WAIT;
+        TCP_TW_LIMIT(&tcp_tw_pcbs);
         TCP_REG(&tcp_tw_pcbs, pcb);
       }
       break;
