@@ -65,6 +65,11 @@
 #include LWIP_HOOK_FILENAME
 #endif
 
+/** operate on tcp_tw_pcbs before TCP_REG */
+#ifndef TCP_TW_LIMIT
+#define TCP_TW_LIMIT(x)
+#endif
+
 /** Initial CWND calculation as defined RFC 2581 */
 #define LWIP_TCP_CALC_INITIAL_CWND(mss) ((tcpwnd_size_t)LWIP_MIN((4U * (mss)), LWIP_MAX((2U * (mss)), 4380U)))
 
@@ -997,6 +1002,7 @@ tcp_process(struct tcp_pcb *pcb)
           tcp_pcb_purge(pcb);
           TCP_RMV_ACTIVE(pcb);
           pcb->state = TIME_WAIT;
+          TCP_TW_LIMIT(&tcp_tw_pcbs);
           TCP_REG(&tcp_tw_pcbs, pcb);
         } else {
           tcp_ack_now(pcb);
@@ -1015,6 +1021,7 @@ tcp_process(struct tcp_pcb *pcb)
         tcp_pcb_purge(pcb);
         TCP_RMV_ACTIVE(pcb);
         pcb->state = TIME_WAIT;
+        TCP_TW_LIMIT(&tcp_tw_pcbs);
         TCP_REG(&tcp_tw_pcbs, pcb);
       }
       break;
@@ -1025,6 +1032,7 @@ tcp_process(struct tcp_pcb *pcb)
         tcp_pcb_purge(pcb);
         TCP_RMV_ACTIVE(pcb);
         pcb->state = TIME_WAIT;
+        TCP_TW_LIMIT(&tcp_tw_pcbs);
         TCP_REG(&tcp_tw_pcbs, pcb);
       }
       break;
